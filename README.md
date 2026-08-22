@@ -41,18 +41,22 @@ Full feature-by-feature breakdown: [`docs/phase2_data_understanding.md`](docs/ph
 ```
 healthcare-readmission-prediction/
 ├── data/
-│   └── raw/                     # Original dataset (diabetic_data.csv, IDs_mapping.csv)
+│   ├── raw/                     # Original dataset (diabetic_data.csv, IDs_mapping.csv)
+│   └── processed/                # Cleaned, analytics-ready dataset (Phase 4 output)
 ├── docs/                        # Phase-by-phase write-ups (business + technical reasoning)
 │   ├── phase1_problem_statement.md
 │   ├── phase2_data_understanding.md
-│   └── phase3_eda.md
+│   ├── phase3_eda.md
+│   └── phase4_data_cleaning.md
 ├── src/
-│   └── eda.py                   # Modular, reusable EDA functions (Phase 3)
+│   ├── eda.py                   # Modular, reusable EDA functions (Phase 3)
+│   └── data_cleaning.py          # Cleaning + feature engineering pipeline (Phase 4)
 ├── sql/                         # Business-question SQL queries (Phase 5, upcoming)
 ├── notebooks/                   # Exploratory notebooks (as needed)
 ├── outputs/
 │   ├── figures/                 # Generated EDA charts
-│   └── eda_summary.txt          # Console output log from src/eda.py
+│   ├── eda_summary.txt          # Console output log from src/eda.py
+│   └── cleaning_summary.txt      # Console output log from src/data_cleaning.py
 ├── requirements.txt
 ├── .gitignore
 ├── LICENSE
@@ -66,7 +70,7 @@ healthcare-readmission-prediction/
 | 1. Problem Statement | ✅ Done | [docs/phase1_problem_statement.md](docs/phase1_problem_statement.md) |
 | 2. Data Understanding | ✅ Done | [docs/phase2_data_understanding.md](docs/phase2_data_understanding.md) |
 | 3. Exploratory Data Analysis | ✅ Done | [docs/phase3_eda.md](docs/phase3_eda.md) |
-| 4. Data Cleaning & Feature Engineering | ⏳ Upcoming | — |
+| 4. Data Cleaning & Feature Engineering | ✅ Done | [docs/phase4_data_cleaning.md](docs/phase4_data_cleaning.md) |
 | 5. SQL Business Analysis | ⏳ Upcoming | — |
 | 6. Machine Learning (LogReg, DT, RF, XGBoost) | ⏳ Upcoming | — |
 | 7. Model Explainability (SHAP) | ⏳ Upcoming | — |
@@ -94,6 +98,16 @@ Full findings with charts: [`docs/phase3_eda.md`](docs/phase3_eda.md)
 
 ![Prior utilization vs readmission](outputs/figures/04_readmission_vs_prior_utilization.png)
 
+## 🧹 Data Cleaning Summary
+
+Raw data (101,766 rows × 50 columns) was cleaned into an analytics-ready
+table (99,320 rows × 40 columns, **0 missing values**): leakage rows removed,
+13 near-zero-variance medication columns dropped, high-cardinality
+categoricals grouped, ICD-9 diagnosis codes mapped to 9 clinical categories,
+and utilization/medication features engineered. Scaling, one-hot encoding,
+and the train/test split are deliberately deferred to a Phase 6 pipeline to
+avoid data leakage. Full write-up: [`docs/phase4_data_cleaning.md`](docs/phase4_data_cleaning.md)
+
 ## ⚙️ Installation & Usage
 
 ```bash
@@ -110,11 +124,16 @@ pip install -r requirements.txt
 
 # Reproduce the EDA (Phase 3)
 python src/eda.py
+
+# Reproduce data cleaning + feature engineering (Phase 4)
+python src/data_cleaning.py
 ```
 
-This regenerates every figure in `outputs/figures/` and prints the full
-statistical summary (missing values, leakage check, outlier report,
-correlation matrix) to the console.
+`src/eda.py` regenerates every figure in `outputs/figures/` and prints the
+full statistical summary (missing values, leakage check, outlier report,
+correlation matrix) to the console. `src/data_cleaning.py` reads
+`data/raw/diabetic_data.csv` and writes the cleaned, analytics-ready table to
+`data/processed/cleaned_diabetic_data.csv`.
 
 ## 🎯 Business Impact (so far)
 
