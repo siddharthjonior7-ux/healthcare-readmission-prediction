@@ -1,0 +1,15 @@
+Loading raw data...
+Raw shape: (101766, 50)
+Removed 2,423 expired/hospice encounters (2.38% of rows)
+Dropped 14 unusable columns: ['weight', 'chlorpropamide', 'acetohexamide', 'tolbutamide', 'acarbose', 'miglitol', 'troglitazone', 'tolazamide', 'examide', 'citoglipton', 'glipizide-metformin', 'glimepiride-pioglitazone', 'metformin-rosiglitazone', 'metformin-pioglitazone']
+Dropped 20 rows with missing primary diagnosis
+Dropped 3 rows with gender == 'Unknown/Invalid'
+
+Final cleaned shape: (99320, 40)
+Remaining missing values: 0
+Readmission rate after cleaning: 11.39%
+
+Saved cleaned dataset to /home/claude/healthcare-readmission-prediction/data/processed/cleaned_diabetic_data.csv
+
+Final columns:
+['encounter_id', 'patient_nbr', 'race', 'gender', 'admission_type_id', 'discharge_disposition_id', 'admission_source_id', 'time_in_hospital', 'payer_code', 'medical_specialty', 'num_lab_procedures', 'num_procedures', 'num_medications', 'number_outpatient', 'number_emergency', 'number_inpatient', 'number_diagnoses', 'max_glu_serum', 'A1Cresult', 'metformin', 'repaglinide', 'nateglinide', 'glimepiride', 'glipizide', 'glyburide', 'pioglitazone', 'rosiglitazone', 'insulin', 'glyburide-metformin', 'change', 'diabetesMed', 'readmitted_30d', 'diag_1_group', 'diag_2_group', 'diag_3_group', 'age_numeric', 'num_med_increased', 'num_med_decreased', 'service_utilization', 'had_prior_inpatient']
