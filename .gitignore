@@ -1,0 +1,25 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Model artifacts (added from Phase 6 onward - large binary files)
+*.pkl
+*.joblib
+models/*.bin
