@@ -1,0 +1,93 @@
+Loading data...
+Shape: (101766, 51)
+Unique patients: 71,518 across 101,766 encounters
+
+--- Missing Value Report (%) ---
+                   missing_count  missing_pct
+weight                     98569        96.86
+max_glu_serum              96420        94.75
+A1Cresult                  84748        83.28
+medical_specialty          49949        49.08
+payer_code                 40256        39.56
+race                        2273         2.23
+diag_3                      1423         1.40
+diag_2                       358         0.35
+diag_1                        21         0.02
+
+--- Target Distribution ---
+readmitted
+NO     54864
+>30    35545
+<30    11357
+Name: count, dtype: int64
+30-day readmission rate: 11.16%
+/home/claude/healthcare-readmission-prediction/src/eda.py:106: UserWarning: set_ticklabels() should only be used with a fixed number of ticks, i.e. after set_ticks() or using a FixedLocator.
+  axes[1].set_xticklabels(["No (0)", "Yes (1)"])
+
+--- Leakage Check: Expired / Hospice discharges ---
+{'n_death_or_hospice_encounters': 2423, 'pct_of_total': np.float64(2.38), 'readmit_rate_in_this_group': np.float64(1.77)}
+
+--- Numeric Feature Summary ---
+                       count       mean        std  ...   50%   75%    max
+time_in_hospital    101766.0   4.395987   2.985108  ...   4.0   6.0   14.0
+num_lab_procedures  101766.0  43.095641  19.674362  ...  44.0  57.0  132.0
+num_procedures      101766.0   1.339730   1.705807  ...   1.0   2.0    6.0
+num_medications     101766.0  16.021844   8.127566  ...  15.0  20.0   81.0
+number_outpatient   101766.0   0.369357   1.267265  ...   0.0   0.0   42.0
+number_emergency    101766.0   0.197836   0.930472  ...   0.0   0.0   76.0
+number_inpatient    101766.0   0.635566   1.262863  ...   0.0   1.0   21.0
+number_diagnoses    101766.0   7.422607   1.933600  ...   8.0   9.0   16.0
+
+[8 rows x 8 columns]
+
+--- Outlier Summary (IQR method) ---
+              feature    q1    q3  ...  upper_bound  n_outliers  pct_outliers
+0    time_in_hospital   2.0   6.0  ...         12.0        2252          2.21
+1  num_lab_procedures  31.0  57.0  ...         96.0         143          0.14
+2      num_procedures   0.0   2.0  ...          5.0        4954          4.87
+3     num_medications  10.0  20.0  ...         35.0        2557          2.51
+4   number_outpatient   0.0   0.0  ...          0.0       16739         16.45
+5    number_emergency   0.0   0.0  ...          0.0       11383         11.19
+6    number_inpatient   0.0   1.0  ...          2.5        7049          6.93
+7    number_diagnoses   6.0   9.0  ...         13.5         281          0.28
+
+[8 rows x 7 columns]
+
+--- Readmission Rate by Age ---
+          readmit_rate_pct      n
+age                              
+[20-30)              14.24   1657
+[80-90)              12.08  17197
+[70-80)              11.77  26068
+[30-40)              11.23   3775
+[60-70)              11.13  22483
+[90-100)             11.10   2793
+[40-50)              10.60   9685
+[50-60)               9.67  17256
+[10-20)               5.79    691
+[0-10)                1.86    161
+
+--- Readmission Rate by A1C Result ---
+           readmit_rate_pct     n
+A1Cresult                        
+>7                    10.05  3812
+>8                     9.87  8216
+Norm                   9.66  4990
+
+--- Readmission Rate by Prior Utilization (charts saved) ---
+
+--- Correlation with Target ---
+number_inpatient      0.165147
+number_emergency      0.060747
+number_diagnoses      0.049524
+time_in_hospital      0.044199
+num_medications       0.038432
+num_lab_procedures    0.020364
+number_outpatient     0.018893
+num_procedures       -0.012227
+Name: readmitted_30d, dtype: float64
+
+--- Diagnosis Code Cardinality ---
+{'unique_diag_1': 716, 'unique_diag_2': 748, 'unique_diag_3': 789}
+
+All figures saved to: /home/claude/healthcare-readmission-prediction/outputs/figures
