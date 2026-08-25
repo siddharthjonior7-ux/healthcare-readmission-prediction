@@ -47,16 +47,19 @@ healthcare-readmission-prediction/
 │   ├── phase1_problem_statement.md
 │   ├── phase2_data_understanding.md
 │   ├── phase3_eda.md
-│   └── phase4_data_cleaning.md
+│   ├── phase4_data_cleaning.md
+│   └── phase5_sql_analysis.md
 ├── src/
 │   ├── eda.py                   # Modular, reusable EDA functions (Phase 3)
-│   └── data_cleaning.py          # Cleaning + feature engineering pipeline (Phase 4)
-├── sql/                         # Business-question SQL queries (Phase 5, upcoming)
+│   ├── data_cleaning.py          # Cleaning + feature engineering pipeline (Phase 4)
+│   └── run_sql_analysis.py       # Builds SQLite DB, runs all sql/*.sql queries (Phase 5)
+├── sql/                         # 8 business-question SQL queries (Phase 5)
 ├── notebooks/                   # Exploratory notebooks (as needed)
 ├── outputs/
 │   ├── figures/                 # Generated EDA charts
 │   ├── eda_summary.txt          # Console output log from src/eda.py
-│   └── cleaning_summary.txt      # Console output log from src/data_cleaning.py
+│   ├── cleaning_summary.txt      # Console output log from src/data_cleaning.py
+│   └── sql_results_console.txt   # Console output log from src/run_sql_analysis.py
 ├── requirements.txt
 ├── .gitignore
 ├── LICENSE
@@ -71,7 +74,7 @@ healthcare-readmission-prediction/
 | 2. Data Understanding | ✅ Done | [docs/phase2_data_understanding.md](docs/phase2_data_understanding.md) |
 | 3. Exploratory Data Analysis | ✅ Done | [docs/phase3_eda.md](docs/phase3_eda.md) |
 | 4. Data Cleaning & Feature Engineering | ✅ Done | [docs/phase4_data_cleaning.md](docs/phase4_data_cleaning.md) |
-| 5. SQL Business Analysis | ⏳ Upcoming | — |
+| 5. SQL Business Analysis | ✅ Done | [docs/phase5_sql_analysis.md](docs/phase5_sql_analysis.md) |
 | 6. Machine Learning (LogReg, DT, RF, XGBoost) | ⏳ Upcoming | — |
 | 7. Model Explainability (SHAP) | ⏳ Upcoming | — |
 | 8. Power BI Dashboard | ⏳ Upcoming | — |
@@ -108,6 +111,18 @@ and utilization/medication features engineered. Scaling, one-hot encoding,
 and the train/test split are deliberately deferred to a Phase 6 pipeline to
 avoid data leakage. Full write-up: [`docs/phase4_data_cleaning.md`](docs/phase4_data_cleaning.md)
 
+## 🗃️ SQL Analysis Highlights
+
+8 business-question queries against a real SQLite database built from the
+cleaned data (CTEs, window functions, JOINs to lookup tables — all standard
+ANSI SQL, portable to Postgres/MySQL/warehouses). Headline finding: patients
+with a **primary diabetes diagnosis + 6 or more prior visits in the past
+year have a 30% readmission rate** — nearly 3x the 11.4% baseline, and a
+concrete, well-defined target population for an intervention program. A
+simple SQL-only risk-decile rule (no ML) already achieves a **~1.9x lift**
+over random selection in the top decile — the bar Phase 6's models need to
+clear. Full write-up: [`docs/phase5_sql_analysis.md`](docs/phase5_sql_analysis.md)
+
 ## ⚙️ Installation & Usage
 
 ```bash
@@ -127,13 +142,18 @@ python src/eda.py
 
 # Reproduce data cleaning + feature engineering (Phase 4)
 python src/data_cleaning.py
+
+# Build the SQLite DB and run all business-question SQL queries (Phase 5)
+python src/run_sql_analysis.py
 ```
 
 `src/eda.py` regenerates every figure in `outputs/figures/` and prints the
 full statistical summary (missing values, leakage check, outlier report,
 correlation matrix) to the console. `src/data_cleaning.py` reads
 `data/raw/diabetic_data.csv` and writes the cleaned, analytics-ready table to
-`data/processed/cleaned_diabetic_data.csv`.
+`data/processed/cleaned_diabetic_data.csv`. `src/run_sql_analysis.py` loads
+that cleaned table (plus lookup tables parsed from `IDs_mapping.csv`) into
+`data/processed/readmission.db` and runs every query in `sql/`.
 
 ## 🎯 Business Impact (so far)
 
