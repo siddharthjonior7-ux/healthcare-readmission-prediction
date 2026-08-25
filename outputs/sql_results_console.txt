@@ -1,0 +1,123 @@
+
+================================================================================
+01_overall_and_diagnosis_readmission_rate.sql
+================================================================================
+ total_encounters  total_readmissions  readmit_rate_pct
+            99320               11309             11.39
+   diag_1_group  n_encounters  n_readmissions  readmit_rate_pct  pct_of_all_encounters
+       Diabetes          8661            1135             13.10                   8.72
+         Injury          6851             850             12.41                   6.90
+    Circulatory         29680            3469             11.69                  29.88
+          Other         17793            2079             11.68                  17.91
+  Genitourinary          5002             552             11.04                   5.04
+      Neoplasms          3131             341             10.89                   3.15
+      Digestive          9333            1010             10.82                   9.40
+    Respiratory         13934            1402             10.06                  14.03
+Musculoskeletal          4935             471              9.54                   4.97
+
+================================================================================
+02_specialty_volume_vs_risk.sql
+================================================================================
+         medical_specialty  n_encounters  readmit_rate_pct
+                Nephrology          1538             16.06
+    Family/GeneralPractice          7252             12.12
+             Other/Missing         55944             11.60
+          InternalMedicine         14234             11.53
+          Emergency/Trauma          7418             11.39
+               Pulmonology           854             11.24
+           Surgery-General          3059             11.18
+               Orthopedics          1392             10.85
+               Radiologist          1121              9.10
+                Cardiology          5278              8.03
+Orthopedics-Reconstructive          1230              7.48
+
+================================================================================
+03_utilization_risk_stratification.sql
+================================================================================
+          utilization_tier  n_encounters  n_readmissions  readmit_rate_pct
+       0 - No prior visits         54665            4551              8.33
+     1-2 - Low utilization         29200            3758             12.87
+3-5 - Moderate utilization         11131            1874             16.84
+     6+ - High utilization          4324            1126             26.04
+
+================================================================================
+04_length_of_stay_analysis.sql
+================================================================================
+ length_of_stay_days  n_encounters  readmit_rate_pct  avg_medications  avg_procedures
+                   1         13820              8.39             11.1             1.2
+                   2         16890             10.09             12.5             1.0
+                   3         17426             10.80             14.3             1.1
+                   4         13677             11.98             16.0             1.2
+                   5          9748             12.27             17.5             1.3
+                   6          7353             12.85             18.6             1.5
+                   7          5696             13.11             19.9             1.6
+                   8          4269             14.59             21.1             1.9
+                   9          2879             14.28             22.0             2.0
+                  10          2262             14.81             23.1             2.1
+                  11          1770             10.85             23.6             2.2
+                  12          1383             13.96             23.8             2.2
+                  13          1152             12.93             24.7             2.3
+                  14           995             13.47             25.5             2.4
+
+================================================================================
+05_admission_source_type_joins.sql
+================================================================================
+admission_type  n_encounters  readmit_rate_pct
+     Emergency         52358             11.82
+        Urgent         18131             11.35
+          NULL          5206             11.20
+ Not Available          4617             10.68
+      Elective         18660             10.49
+    Not Mapped           320              8.44
+                               admission_source  n_encounters  readmit_rate_pct
+ Transfer from a Skilled Nursing Facility (SNF)           805             12.42
+                                 Emergency Room         55840             11.98
+                                           NULL          6569             10.72
+                             Physician Referral         29157             10.69
+                                Clinic Referral          1081             10.27
+                       Transfer from a hospital          3118              9.91
+     Transfer from another health care facility          2239              9.47
+
+================================================================================
+06_high_risk_segment_matrix.sql
+================================================================================
+diag_1_group     utilization_tier  n_encounters  readmit_rate_pct
+    Diabetes     High utilization           722             30.06
+   Digestive     High utilization           453             28.04
+ Respiratory     High utilization           626             26.84
+       Other     High utilization           942             24.73
+ Circulatory     High utilization           935             24.06
+    Diabetes Moderate utilization          1110             19.82
+   Digestive Moderate utilization          1064             17.39
+       Other Moderate utilization          2196             17.35
+ Respiratory Moderate utilization          1659             16.94
+      Injury Moderate utilization           816             16.54
+
+================================================================================
+07_medication_change_impact.sql
+================================================================================
+ med_change_status  n_encounters  readmit_rate_pct
+Medication changed         46112             12.02
+         No change         53208             10.84
+insulin_status  n_encounters  readmit_rate_pct
+            No         46365             10.21
+          Down         11906             14.22
+        Steady         30063             11.37
+            Up         10986             13.34
+
+================================================================================
+08_risk_decile_prioritization.sql
+================================================================================
+ risk_decile  n_encounters  n_readmissions  readmit_rate_pct  pct_of_all_readmissions_captured
+           1          9932            2148             21.63                             18.99
+           2          9932            1619             16.30                             14.32
+           3          9932            1336             13.45                             11.81
+           4          9932            1203             12.11                             10.64
+           5          9932            1026             10.33                              9.07
+           6          9932             999             10.06                              8.83
+           7          9932             860              8.66                              7.60
+           8          9932             799              8.04                              7.07
+           9          9932             724              7.29                              6.40
+          10          9932             595              5.99                              5.26
+
+All query results saved to /home/claude/healthcare-readmission-prediction/outputs/sql_results.txt

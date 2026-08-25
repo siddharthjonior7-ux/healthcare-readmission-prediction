@@ -23,3 +23,7 @@ Thumbs.db
 *.pkl
 *.joblib
 models/*.bin
+
+# Derived SQLite DB - fully reproducible from data/processed/cleaned_diabetic_data.csv
+# via `python src/run_sql_analysis.py`; not tracked to keep repo size down.
+data/processed/*.db
