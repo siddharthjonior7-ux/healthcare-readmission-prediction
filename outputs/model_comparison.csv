@@ -1,0 +1,5 @@
+model,accuracy,precision,recall,f1,roc_auc,top_decile_readmit_rate_pct,pct_of_readmissions_captured,lift_vs_random
+Logistic Regression,0.6658,0.179,0.5482,0.2699,0.6598,25.24,22.41,2.24
+Decision Tree,0.6647,0.1721,0.5185,0.2584,0.6427,25.19,22.37,2.24
+Random Forest,0.6741,0.1815,0.5392,0.2715,0.6645,25.9,23.0,2.3
+XGBoost,0.6611,0.1792,0.5608,0.2716,0.6671,27.22,24.17,2.42

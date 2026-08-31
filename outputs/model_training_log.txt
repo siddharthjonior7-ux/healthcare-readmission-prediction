@@ -1,0 +1,94 @@
+Loading cleaned data...
+Shape: (99320, 40)
+Patient-level split verified: 0 overlapping patients between train/test.
+Train: 79,596 encounters (55,983 patients)
+Test:  19,724 encounters (13,996 patients)
+
+Class balance in training set -- positive: 9,087, negative: 70,509, scale_pos_weight: 7.76
+
+Logistic Regression:
+  accuracy: 0.6658
+  precision: 0.179
+  recall: 0.5482
+  f1: 0.2699
+  roc_auc: 0.6598
+  top_decile_readmit_rate_pct: 25.24
+  pct_of_readmissions_captured: 22.41
+  lift_vs_random: 2.24
+
+Decision Tree:
+  accuracy: 0.6647
+  precision: 0.1721
+  recall: 0.5185
+  f1: 0.2584
+  roc_auc: 0.6427
+  top_decile_readmit_rate_pct: 25.19
+  pct_of_readmissions_captured: 22.37
+  lift_vs_random: 2.24
+
+Random Forest:
+  accuracy: 0.6741
+  precision: 0.1815
+  recall: 0.5392
+  f1: 0.2715
+  roc_auc: 0.6645
+  top_decile_readmit_rate_pct: 25.9
+  pct_of_readmissions_captured: 23.0
+  lift_vs_random: 2.3
+
+XGBoost:
+  accuracy: 0.6611
+  precision: 0.1792
+  recall: 0.5608
+  f1: 0.2716
+  roc_auc: 0.6671
+  top_decile_readmit_rate_pct: 27.22
+  pct_of_readmissions_captured: 24.17
+  lift_vs_random: 2.42
+
+================================================================================
+MODEL COMPARISON
+================================================================================
+                     accuracy  precision  recall      f1  roc_auc  top_decile_readmit_rate_pct  pct_of_readmissions_captured  lift_vs_random
+model                                                                                                                                       
+Logistic Regression    0.6658     0.1790  0.5482  0.2699   0.6598                        25.24                         22.41            2.24
+Decision Tree          0.6647     0.1721  0.5185  0.2584   0.6427                        25.19                         22.37            2.24
+Random Forest          0.6741     0.1815  0.5392  0.2715   0.6645                        25.90                         23.00            2.30
+XGBoost                0.6611     0.1792  0.5608  0.2716   0.6671                        27.22                         24.17            2.42
+
+Best model by ROC-AUC: XGBoost
+
+Top 10 features for XGBoost:
+                     feature  importance
+  discharge_disposition_id_1    0.112070
+            number_inpatient    0.088573
+ discharge_disposition_id_22    0.033344
+       admission_source_id_6    0.015743
+                 diabetesMed    0.014777
+  discharge_disposition_id_5    0.014722
+  discharge_disposition_id_2    0.014588
+diag_1_group_Musculoskeletal    0.014337
+  discharge_disposition_id_3    0.012751
+          diag_1_group_Other    0.012688
+
+Saved best model pipeline to models/best_model.joblib
+
+================================================================================
+FAIRNESS SUPPLEMENTARY CHECK (race + payer_code)
+================================================================================
+
+XGBoost + race/payer_code:
+  accuracy: 0.6666
+  precision: 0.1827
+  recall: 0.5644
+  f1: 0.2761
+  roc_auc: 0.6692
+  top_decile_readmit_rate_pct: 27.01
+  pct_of_readmissions_captured: 23.99
+  lift_vs_random: 2.4
+
+ROC-AUC without race/payer_code: 0.6671
+ROC-AUC with race/payer_code:    0.6692
+AUC uplift from adding these features: 0.0021
+
+Saved full summary to outputs/model_summary.json

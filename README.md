@@ -48,18 +48,25 @@ healthcare-readmission-prediction/
 │   ├── phase2_data_understanding.md
 │   ├── phase3_eda.md
 │   ├── phase4_data_cleaning.md
-│   └── phase5_sql_analysis.md
+│   ├── phase5_sql_analysis.md
+│   ├── phase6_machine_learning.md
+│   └── phase7_model_explainability.md
 ├── src/
 │   ├── eda.py                   # Modular, reusable EDA functions (Phase 3)
 │   ├── data_cleaning.py          # Cleaning + feature engineering pipeline (Phase 4)
-│   └── run_sql_analysis.py       # Builds SQLite DB, runs all sql/*.sql queries (Phase 5)
+│   ├── run_sql_analysis.py       # Builds SQLite DB, runs all sql/*.sql queries (Phase 5)
+│   ├── train_models.py           # Trains + compares 4 classifiers (Phase 6)
+│   └── explainability.py         # SHAP global + local explanations (Phase 7)
 ├── sql/                         # 8 business-question SQL queries (Phase 5)
 ├── notebooks/                   # Exploratory notebooks (as needed)
+├── models/                      # Saved best model pipeline (gitignored - reproducible)
 ├── outputs/
-│   ├── figures/                 # Generated EDA charts
+│   ├── figures/                 # Generated EDA + model evaluation charts
 │   ├── eda_summary.txt          # Console output log from src/eda.py
 │   ├── cleaning_summary.txt      # Console output log from src/data_cleaning.py
-│   └── sql_results_console.txt   # Console output log from src/run_sql_analysis.py
+│   ├── sql_results_console.txt   # Console output log from src/run_sql_analysis.py
+│   ├── model_comparison.csv      # Metrics table from src/train_models.py
+│   └── model_summary.json        # Full results summary from src/train_models.py
 ├── requirements.txt
 ├── .gitignore
 ├── LICENSE
@@ -75,8 +82,8 @@ healthcare-readmission-prediction/
 | 3. Exploratory Data Analysis | ✅ Done | [docs/phase3_eda.md](docs/phase3_eda.md) |
 | 4. Data Cleaning & Feature Engineering | ✅ Done | [docs/phase4_data_cleaning.md](docs/phase4_data_cleaning.md) |
 | 5. SQL Business Analysis | ✅ Done | [docs/phase5_sql_analysis.md](docs/phase5_sql_analysis.md) |
-| 6. Machine Learning (LogReg, DT, RF, XGBoost) | ⏳ Upcoming | — |
-| 7. Model Explainability (SHAP) | ⏳ Upcoming | — |
+| 6. Machine Learning (LogReg, DT, RF, XGBoost) | ✅ Done | [docs/phase6_machine_learning.md](docs/phase6_machine_learning.md) |
+| 7. Model Explainability (SHAP) | ✅ Done | [docs/phase7_model_explainability.md](docs/phase7_model_explainability.md) |
 | 8. Power BI Dashboard | ⏳ Upcoming | — |
 | 9. Final polished documentation | ⏳ Upcoming | — |
 
@@ -123,6 +130,39 @@ simple SQL-only risk-decile rule (no ML) already achieves a **~1.9x lift**
 over random selection in the top decile — the bar Phase 6's models need to
 clear. Full write-up: [`docs/phase5_sql_analysis.md`](docs/phase5_sql_analysis.md)
 
+## 🤖 Machine Learning Results
+
+Trained and compared 4 classifiers (Logistic Regression, Decision Tree,
+Random Forest, XGBoost) with a patient-level train/test split and
+leakage-safe preprocessing. **XGBoost wins** (ROC-AUC 0.667, top-decile
+lift 2.42x) — beating the Phase 5 SQL-only benchmark (1.9x lift) by ~27%,
+a concrete, quantified case for deploying a model over a manual rule. A
+fairness check found `race`/`payer_code` add only +0.0021 AUC — essentially
+free to exclude from production. Full write-up:
+[`docs/phase6_machine_learning.md`](docs/phase6_machine_learning.md)
+
+| Model | ROC-AUC | Top-decile lift |
+|---|---|---|
+| Logistic Regression | 0.660 | 2.24x |
+| Decision Tree | 0.643 | 2.24x |
+| Random Forest | 0.664 | 2.30x |
+| **XGBoost** | **0.667** | **2.42x** |
+
+## 🔍 Model Explainability (SHAP)
+
+SHAP confirms `number_inpatient` as a top global driver — independently
+found by EDA (Phase 3), SQL (Phase 5), *and* SHAP (Phase 7), a strong
+triangulated signal. A naive first pass was actively misleading: one-hot
+encoding fragments categorical columns, and rare categories (some with as
+few as 3 patients) inflated SHAP magnitude from overfitting, not real
+signal — caught, diagnosed, and fixed with a frequency threshold before
+presenting results. Local explanations on the model's most extreme
+predictions show the highest-confidence prediction across the *entire*
+19,724-row test set is still only 24.3% — an honest finding that reframes
+how this tool should be pitched: a risk-ranking aid for prioritizing a
+limited follow-up budget, not a certainty machine. Full write-up:
+[`docs/phase7_model_explainability.md`](docs/phase7_model_explainability.md)
+
 ## ⚙️ Installation & Usage
 
 ```bash
@@ -145,6 +185,12 @@ python src/data_cleaning.py
 
 # Build the SQLite DB and run all business-question SQL queries (Phase 5)
 python src/run_sql_analysis.py
+
+# Train and compare all 4 ML models (Phase 6)
+python src/train_models.py
+
+# Generate SHAP global + local explanations for the winning model (Phase 7)
+python src/explainability.py
 ```
 
 `src/eda.py` regenerates every figure in `outputs/figures/` and prints the
