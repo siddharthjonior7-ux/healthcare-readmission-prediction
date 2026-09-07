@@ -1,0 +1,3 @@
+check,roc_auc
+race + payer_code excluded (production default),0.667
+race + payer_code included,0.6685

@@ -4,21 +4,19 @@ Predicting 30-day hospital readmission risk for diabetic patients, using the
 Diabetes 130-US Hospitals dataset (1999–2008, ~100K encounters across 130
 hospitals). Built as an end-to-end, production-style data science project —
 from business problem framing through EDA, cleaning, SQL analysis, ML
-modeling, explainability, and a BI dashboard.
+modeling, explainability, and a BI dashboard design.
 
 **Project status**: 🚧 In progress — built and documented one phase at a
-time. See the [Progress](#-progress) section below.
+time. See [Progress](#-progress) below.
 
 ## 📌 Why This Project
 
 Hospital readmissions within 30 days are one of the most consequential
-metrics in US healthcare operations:
-- CMS penalizes hospitals with excess 30-day readmissions under the
-  Hospital Readmissions Reduction Program (HRRP) — up to 3% of total
-  Medicare reimbursement.
-- A single readmission can cost $10,000–$15,000+.
-- Diabetic patients are disproportionately at risk, since diabetes
-  complicates recovery from nearly every other condition.
+metrics in US healthcare operations: CMS penalizes hospitals with excess
+30-day readmissions under the Hospital Readmissions Reduction Program
+(HRRP), a single readmission can cost $10,000–$15,000+, and diabetic
+patients are disproportionately at risk since diabetes complicates recovery
+from nearly every other condition.
 
 **Goal**: identify, at the moment of discharge, which diabetic patients are
 most likely to be readmitted within 30 days — so hospital care teams can
@@ -41,32 +39,29 @@ Full feature-by-feature breakdown: [`docs/phase2_data_understanding.md`](docs/ph
 ```
 healthcare-readmission-prediction/
 ├── data/
-│   ├── raw/                     # Original dataset (diabetic_data.csv, IDs_mapping.csv)
-│   └── processed/                # Cleaned, analytics-ready dataset (Phase 4 output)
-├── docs/                        # Phase-by-phase write-ups (business + technical reasoning)
+│   ├── raw/                      # Original dataset + parsed lookup tables
+│   └── processed/                 # Cleaned data (Phase 4) + SQLite DB (Phase 5)
+├── docs/                         # Phase-by-phase write-ups
 │   ├── phase1_problem_statement.md
 │   ├── phase2_data_understanding.md
 │   ├── phase3_eda.md
 │   ├── phase4_data_cleaning.md
 │   ├── phase5_sql_analysis.md
 │   ├── phase6_machine_learning.md
-│   └── phase7_model_explainability.md
+│   ├── phase7_model_explainability.md
+│   └── phase8_dashboard_design.md
 ├── src/
-│   ├── eda.py                   # Modular, reusable EDA functions (Phase 3)
-│   ├── data_cleaning.py          # Cleaning + feature engineering pipeline (Phase 4)
-│   ├── run_sql_analysis.py       # Builds SQLite DB, runs all sql/*.sql queries (Phase 5)
-│   ├── train_models.py           # Trains + compares 4 classifiers (Phase 6)
-│   └── explainability.py         # SHAP global + local explanations (Phase 7)
-├── sql/                         # 8 business-question SQL queries (Phase 5)
-├── notebooks/                   # Exploratory notebooks (as needed)
-├── models/                      # Saved best model pipeline (gitignored - reproducible)
-├── outputs/
-│   ├── figures/                 # Generated EDA + model evaluation charts
-│   ├── eda_summary.txt          # Console output log from src/eda.py
-│   ├── cleaning_summary.txt      # Console output log from src/data_cleaning.py
-│   ├── sql_results_console.txt   # Console output log from src/run_sql_analysis.py
-│   ├── model_comparison.csv      # Metrics table from src/train_models.py
-│   └── model_summary.json        # Full results summary from src/train_models.py
+│   ├── eda.py                    # Phase 3
+│   ├── data_cleaning.py           # Phase 4
+│   ├── run_sql_analysis.py        # Phase 5
+│   ├── train_models.py            # Phase 6
+│   ├── explainability.py          # Phase 7
+│   └── build_dashboard_data.py    # Phase 8
+├── sql/                          # 8 business-question SQL queries (Phase 5)
+├── powerbi/                      # Star-schema data exports for the dashboard (Phase 8)
+├── notebooks/
+├── models/                       # Saved best model pipeline (gitignored - reproducible)
+├── outputs/                      # Figures, logs, result tables from every phase
 ├── requirements.txt
 ├── .gitignore
 ├── LICENSE
@@ -82,86 +77,59 @@ healthcare-readmission-prediction/
 | 3. Exploratory Data Analysis | ✅ Done | [docs/phase3_eda.md](docs/phase3_eda.md) |
 | 4. Data Cleaning & Feature Engineering | ✅ Done | [docs/phase4_data_cleaning.md](docs/phase4_data_cleaning.md) |
 | 5. SQL Business Analysis | ✅ Done | [docs/phase5_sql_analysis.md](docs/phase5_sql_analysis.md) |
-| 6. Machine Learning (LogReg, DT, RF, XGBoost) | ✅ Done | [docs/phase6_machine_learning.md](docs/phase6_machine_learning.md) |
+| 6. Machine Learning | ✅ Done | [docs/phase6_machine_learning.md](docs/phase6_machine_learning.md) |
 | 7. Model Explainability (SHAP) | ✅ Done | [docs/phase7_model_explainability.md](docs/phase7_model_explainability.md) |
-| 8. Power BI Dashboard | ⏳ Upcoming | — |
+| 8. Power BI Dashboard Design | ✅ Done | [docs/phase8_dashboard_design.md](docs/phase8_dashboard_design.md) |
 | 9. Final polished documentation | ⏳ Upcoming | — |
 
-## 🔑 Key EDA Findings So Far
+## 🔑 Key Findings
 
-- **Class imbalance is real**: only **11.16%** of encounters are 30-day
-  readmissions — accuracy is a misleading metric here; ROC-AUC and recall
-  matter far more.
-- **Prior healthcare utilization is the strongest signal found so far**:
-  patients with 5+ prior inpatient visits have a **~36%** readmission rate,
-  vs. **~8.5%** for first-time patients — a near-linear relationship.
-- **A data leakage source was identified and quantified**: 2.38% of
-  encounters are expired/hospice discharges, which structurally cannot be
-  "readmitted" and artificially suppress the target rate in that group
-  (1.77% vs. the ~11% baseline). These are removed before modeling.
-- **Whether an A1C test was ordered matters more than the result**: tested
-  patients (any result) show lower readmission rates (9.7–10.1%) than
-  untested patients (11.4%) — replicating a finding from the original 2014
-  research behind this dataset.
-
-Full findings with charts: [`docs/phase3_eda.md`](docs/phase3_eda.md)
-
-![Prior utilization vs readmission](outputs/figures/04_readmission_vs_prior_utilization.png)
-
-## 🧹 Data Cleaning Summary
-
-Raw data (101,766 rows × 50 columns) was cleaned into an analytics-ready
-table (99,320 rows × 40 columns, **0 missing values**): leakage rows removed,
-13 near-zero-variance medication columns dropped, high-cardinality
-categoricals grouped, ICD-9 diagnosis codes mapped to 9 clinical categories,
-and utilization/medication features engineered. Scaling, one-hot encoding,
-and the train/test split are deliberately deferred to a Phase 6 pipeline to
-avoid data leakage. Full write-up: [`docs/phase4_data_cleaning.md`](docs/phase4_data_cleaning.md)
-
-## 🗃️ SQL Analysis Highlights
-
-8 business-question queries against a real SQLite database built from the
-cleaned data (CTEs, window functions, JOINs to lookup tables — all standard
-ANSI SQL, portable to Postgres/MySQL/warehouses). Headline finding: patients
-with a **primary diabetes diagnosis + 6 or more prior visits in the past
-year have a 30% readmission rate** — nearly 3x the 11.4% baseline, and a
-concrete, well-defined target population for an intervention program. A
-simple SQL-only risk-decile rule (no ML) already achieves a **~1.9x lift**
-over random selection in the top decile — the bar Phase 6's models need to
-clear. Full write-up: [`docs/phase5_sql_analysis.md`](docs/phase5_sql_analysis.md)
+- **Class imbalance is real**: only **11.4%** of encounters are 30-day
+  readmissions — accuracy is a misleading metric; ROC-AUC and top-decile
+  lift matter far more.
+- **Prior healthcare utilization is the strongest signal**, confirmed
+  independently by EDA (Phase 3), SQL (Phase 5), *and* SHAP (Phase 7):
+  patients with 5+ prior inpatient visits have a **~36%** readmission rate
+  vs. **~8.5%** for first-time patients.
+- **A data leakage source was found and removed**: 2.38% of encounters are
+  expired/hospice discharges, which structurally cannot be "readmitted."
+- **XGBoost beats a SQL-only benchmark by ~24%** on top-decile lift (2.36x
+  vs. 1.9x) — a concrete, quantified case for deploying a model.
+- **`race` and `payer_code` can be excluded from production at essentially
+  zero cost** (+0.0015 AUC) — removing a fairness liability for free.
+- **A real pipeline bug was caught, diagnosed, and fixed mid-project**: a
+  sparse-matrix/missing-value interaction specific to XGBoost was silently
+  corrupting ~62% of its training input. Documented in full in
+  [`docs/phase6_machine_learning.md`](docs/phase6_machine_learning.md#61-a-bug-caught-and-fixed-mid-phase-documented-not-hidden).
 
 ## 🤖 Machine Learning Results
 
-Trained and compared 4 classifiers (Logistic Regression, Decision Tree,
-Random Forest, XGBoost) with a patient-level train/test split and
-leakage-safe preprocessing. **XGBoost wins** (ROC-AUC 0.667, top-decile
-lift 2.42x) — beating the Phase 5 SQL-only benchmark (1.9x lift) by ~27%,
-a concrete, quantified case for deploying a model over a manual rule. A
-fairness check found `race`/`payer_code` add only +0.0021 AUC — essentially
-free to exclude from production. Full write-up:
-[`docs/phase6_machine_learning.md`](docs/phase6_machine_learning.md)
-
 | Model | ROC-AUC | Top-decile lift |
 |---|---|---|
-| Logistic Regression | 0.660 | 2.24x |
+| Logistic Regression | 0.660 | 2.25x |
 | Decision Tree | 0.643 | 2.24x |
-| Random Forest | 0.664 | 2.30x |
-| **XGBoost** | **0.667** | **2.42x** |
+| Random Forest | 0.664 | 2.29x |
+| **XGBoost** | **0.667** | **2.36x** |
 
 ## 🔍 Model Explainability (SHAP)
 
-SHAP confirms `number_inpatient` as a top global driver — independently
-found by EDA (Phase 3), SQL (Phase 5), *and* SHAP (Phase 7), a strong
-triangulated signal. A naive first pass was actively misleading: one-hot
-encoding fragments categorical columns, and rare categories (some with as
-few as 3 patients) inflated SHAP magnitude from overfitting, not real
-signal — caught, diagnosed, and fixed with a frequency threshold before
-presenting results. Local explanations on the model's most extreme
-predictions show the highest-confidence prediction across the *entire*
-19,724-row test set is still only 24.3% — an honest finding that reframes
-how this tool should be pitched: a risk-ranking aid for prioritizing a
-limited follow-up budget, not a certainty machine. Full write-up:
+`number_inpatient` is the clear #1 global driver — independently confirmed
+by EDA, SQL, and SHAP. Local explanations on the model's true highest- and
+lowest-risk test-set patients are now clean, coherent, one-sentence
+explainable stories (e.g. "flagged primarily because of 11 prior inpatient
+visits"), a direct result of the Phase 6 bug fix. Full write-up:
 [`docs/phase7_model_explainability.md`](docs/phase7_model_explainability.md)
+
+## 📊 Dashboard Design
+
+A star-schema data export (`powerbi/`) plus a full 4-page design spec —
+Executive Overview, Risk Segmentation & Prioritization, Clinical &
+Operational Drivers, and Model Performance & Trust — with DAX measures,
+slicers, and business recommendations. Explicitly handles two real data
+constraints: no date/hospital dimension (ruling out trend/facility
+comparisons), and a `data_split` flag ensuring every risk score shown is
+genuinely out-of-sample, never inflated by training-set memorization.
+Full write-up: [`docs/phase8_dashboard_design.md`](docs/phase8_dashboard_design.md)
 
 ## ⚙️ Installation & Usage
 
@@ -177,38 +145,23 @@ source venv/bin/activate      # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Reproduce the EDA (Phase 3)
-python src/eda.py
-
-# Reproduce data cleaning + feature engineering (Phase 4)
-python src/data_cleaning.py
-
-# Build the SQLite DB and run all business-question SQL queries (Phase 5)
-python src/run_sql_analysis.py
-
-# Train and compare all 4 ML models (Phase 6)
-python src/train_models.py
-
-# Generate SHAP global + local explanations for the winning model (Phase 7)
-python src/explainability.py
+# Run the full pipeline, in order
+python src/eda.py                    # Phase 3: EDA figures + stats
+python src/data_cleaning.py          # Phase 4: cleaned dataset
+python src/run_sql_analysis.py       # Phase 5: SQLite DB + query results
+python src/train_models.py           # Phase 6: train + compare 4 models
+python src/explainability.py         # Phase 7: SHAP global + local explanations
+python src/build_dashboard_data.py   # Phase 8: Power BI data exports
 ```
 
-`src/eda.py` regenerates every figure in `outputs/figures/` and prints the
-full statistical summary (missing values, leakage check, outlier report,
-correlation matrix) to the console. `src/data_cleaning.py` reads
-`data/raw/diabetic_data.csv` and writes the cleaned, analytics-ready table to
-`data/processed/cleaned_diabetic_data.csv`. `src/run_sql_analysis.py` loads
-that cleaned table (plus lookup tables parsed from `IDs_mapping.csv`) into
-`data/processed/readmission.db` and runs every query in `sql/`.
+## 🎯 Business Impact
 
-## 🎯 Business Impact (so far)
-
-Even before any ML model is trained, the EDA alone surfaces an actionable
-insight: **a hospital could start flagging patients with 3+ prior inpatient
-visits in the past year for proactive discharge planning today**, without
-waiting for a model. This becomes the benchmark that the ML models built in
-Phase 6 will need to beat in order to justify their added complexity — a
-question this project answers explicitly rather than assuming.
+Even before any ML model, SQL analysis alone surfaced an actionable
+finding: **diabetes-primary diagnosis + 6 or more prior visits = a 30%
+readmission rate**, a well-defined, ~700-patient population worth its own
+intervention program. The trained XGBoost model then improved on the best
+manual rule by ~24% in top-decile lift — a concrete, quantified answer to
+"is the added model complexity worth it?" rather than an assumption.
 
 ## 📄 License
 

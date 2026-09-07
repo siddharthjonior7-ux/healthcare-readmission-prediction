@@ -1,30 +1,31 @@
 Loading cleaned data and trained pipeline...
-Test set: 19,724 encounters x 121 features (post-encoding)
-22 of 121 one-hot columns are rare-category (< 200 patients) and will be excluded from RELIABLE rankings.
+Test set: 19,724 encounters x 121 features (post-encoding, dense)
+22 of 121 one-hot columns are rare-category (< 200 patients) and excluded from RELIABLE rankings.
 Computing SHAP values on a random sample of 2,000 test encounters...
 Saved RAW global SHAP bar + beeswarm charts.
 
-Top 15 features by mean |SHAP value| (RELIABLE — rare categories excluded):
-                           feature  mean_abs_shap
-       discharge_disposition_id_23       0.291336
-                  number_inpatient       0.287260
-                       repaglinide       0.269012
-        discharge_disposition_id_2       0.259062
-            diag_2_group_Neoplasms       0.241807
-                   num_medications       0.224946
-                diag_3_group_Other       0.223404
-        diag_1_group_Genitourinary       0.212422
- medical_specialty_Surgery-General       0.183917
-medical_specialty_InternalMedicine       0.172964
-                       glimepiride       0.158965
-               admission_type_id_3       0.158387
-        discharge_disposition_id_5       0.154825
-                         metformin       0.147866
-          diag_2_group_Circulatory       0.147302
+Top 15 features by mean |SHAP value| (RELIABLE):
+                    feature  mean_abs_shap
+           number_inpatient       0.266894
+ discharge_disposition_id_1       0.182425
+        service_utilization       0.081065
+                diabetesMed       0.058084
+                age_numeric       0.055424
+           number_diagnoses       0.053113
+   diag_1_group_Circulatory       0.052359
+            num_medications       0.046040
+           time_in_hospital       0.040463
+                  metformin       0.040284
+         num_lab_procedures       0.039303
+discharge_disposition_id_22       0.037166
+   diag_1_group_Respiratory       0.029107
+          num_med_decreased       0.024569
+ discharge_disposition_id_6       0.024262
 Saved RELIABLE global SHAP bar + beeswarm charts.
 
-Highest-risk patient in full test set: encounter_id=145267536, predicted probability=0.243, actual readmitted_30d=1
-Lowest-risk patient in full test set: encounter_id=173225688, predicted probability=0.001, actual readmitted_30d=0
+Highest-risk patient in full test set: encounter_id=406781108, predicted probability=0.945, actual readmitted_30d=1
+Lowest-risk patient in full test set: encounter_id=243402714, predicted probability=0.050, actual readmitted_30d=0
+Full test-set probability range: 0.050 to 0.945, mean 0.448
 Saved high-risk and low-risk waterfall plots (reliable features only).
 
 Done. All figures saved to outputs/figures/

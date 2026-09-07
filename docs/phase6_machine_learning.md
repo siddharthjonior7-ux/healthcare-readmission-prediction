@@ -1,195 +1,152 @@
 # Phase 6: Machine Learning
 
 Implemented in [`src/train_models.py`](../src/train_models.py). Run
-`python src/train_models.py` to reproduce every number and figure below —
-all results here are real, from the actual cleaned dataset (99,320
-encounters).
+`python src/train_models.py` to reproduce every number below.
 
-## 6.1 Three Design Decisions Made Before Training Anything
+## 6.1 A Bug Caught and Fixed Mid-Phase (documented, not hidden)
 
-**1. Patient-level train/test split.** The same patient can appear in
-multiple encounters (Phase 2.1). A row-level split risks the same patient
-appearing in both train and test, letting the model partially "memorize"
-that patient rather than generalize. We split with `GroupShuffleSplit` on
-`patient_nbr` and explicitly verified zero overlap:
+An earlier version of this pipeline built the `ColumnTransformer` with
+`OneHotEncoder(handle_unknown="ignore")` at its default settings, which
+outputs a **sparse matrix**. `ColumnTransformer` propagates sparse output
+to the whole combined feature matrix whenever any one transformer is
+sparse. This interacts badly with XGBoost specifically: **XGBoost's
+`DMatrix` construction treats structurally-absent (unstored) entries in a
+sparse matrix as *missing values*, not literal zeros.** Scikit-learn's own
+estimators (Logistic Regression, Decision Tree, Random Forest) don't have
+this semantic — they read sparse zeros as real zeros.
 
+This mattered here specifically because **61.6% of the numeric feature
+block was legitimately `0`** — `change`, `diabetesMed`, `had_prior_inpatient`,
+most medication ordinal columns, and `number_inpatient` for the majority of
+patients are all commonly zero. Feeding that as a sparse matrix silently
+told XGBoost that most of its own input was missing.
+
+**How it was caught**: a later phase (model explainability) computed
+predictions two different ways that should have been mathematically
+identical — once via the full pipeline, once by manually transforming then
+calling the model directly — and got a 4x difference in the model's
+top prediction (0.948 vs 0.243 probability) on the exact same patient. That
+inconsistency was the signal something was wrong; tracing it back
+identified the sparse/dense mismatch as the root cause.
+
+**The fix**: force `OneHotEncoder(handle_unknown="ignore", sparse_output=False)`,
+so every model — not just XGBoost — trains and predicts on an unambiguous
+dense array. All results below reflect the corrected pipeline.
+
+**How much did it actually change?** Less than expected, reassuringly:
+XGBoost's ROC-AUC moved from 0.6671 to 0.6670 — effectively unchanged,
+because XGBoost has robust built-in handling for missing values (it learns
+a default split direction for them) and apparently compensated reasonably
+well even with the corrupted encoding. What *did* change meaningfully was
+the model's **predicted probability values and top-decile lift** (2.42x →
+2.36x) and, much more importantly, the **entire SHAP explainability
+analysis in Phase 7**, which depends on the model's internal split
+structure being sound — that phase required a full redo, documented there.
+
+## 6.2 Three Design Decisions Made Before Training Anything
+
+**1. Patient-level train/test split.** `GroupShuffleSplit` on `patient_nbr`,
+verified zero overlap:
 ```
-Patient-level split verified: 0 overlapping patients between train/test.
 Train: 79,596 encounters (55,983 patients)
 Test:  19,724 encounters (13,996 patients)
 ```
 
-**2. Preprocessing fit only on the training fold.** Scaling
-(`StandardScaler`, for Logistic Regression only) and one-hot encoding
-(`OneHotEncoder(handle_unknown="ignore")`, for all models) live inside a
-single scikit-learn `Pipeline` per model, fit exclusively on training data.
-This is the leakage-prevention step promised back in Phase 4.11 — test-set
-statistics never influence how training data is transformed.
-`handle_unknown="ignore"` also means a rare category unseen in training
-(e.g. an unusual `medical_specialty`) doesn't crash inference in production
-— it's just encoded as all-zeros.
+**2. Preprocessing fit only on the training fold**, inside a single
+scikit-learn `Pipeline` per model — the leakage-prevention step promised in
+Phase 4.11.
 
 **3. Class imbalance handled via class weighting, not resampling.**
-`class_weight="balanced"` (scikit-learn models) and `scale_pos_weight=7.76`
-(XGBoost, computed as the actual negative/positive ratio in the training
-set: 70,509 / 9,087) penalize mistakes on the minority (readmitted) class
-more heavily during training. This was chosen over synthetic resampling
-(e.g. SMOTE) deliberately — it requires no synthetic patient records, adds
-no extra pipeline complexity, and is the more defensible choice to explain
-to a non-technical stakeholder ("we told the model these cases matter
-more," not "we generated fake patients").
+`class_weight="balanced"` (sklearn models) and `scale_pos_weight≈7.76`
+(XGBoost) penalize mistakes on the minority (readmitted) class more
+heavily, chosen over SMOTE-style resampling to avoid synthetic patient
+records.
 
-## 6.2 Model Comparison — Real Results
+## 6.3 Model Comparison — Corrected Results
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC | Top-decile lift |
 |---|---|---|---|---|---|---|
-| Logistic Regression | 0.6658 | 0.1790 | 0.5482 | 0.2699 | 0.6598 | 2.24x |
+| Logistic Regression | 0.6661 | 0.1793 | 0.5491 | 0.2704 | 0.6598 | 2.25x |
 | Decision Tree | 0.6647 | 0.1721 | 0.5185 | 0.2584 | 0.6427 | 2.24x |
-| Random Forest | 0.6741 | 0.1815 | 0.5392 | 0.2715 | 0.6645 | 2.30x |
-| **XGBoost** | 0.6611 | 0.1792 | 0.5608 | 0.2716 | **0.6671** | **2.42x** |
+| Random Forest | 0.6726 | 0.1807 | 0.5396 | 0.2708 | 0.6637 | 2.29x |
+| **XGBoost** | 0.6614 | 0.1802 | 0.5648 | 0.2732 | **0.6670** | **2.36x** |
 
-**Winner: XGBoost**, selected by ROC-AUC — the primary metric per the
-Phase 1 success criteria, since it measures ranking quality independent of
-threshold, which is what the "prioritize the riskiest patients" business
-use case actually needs.
+**Winner: XGBoost**, by ROC-AUC — the primary metric per Phase 1's success
+criteria, since it measures ranking quality independent of threshold.
 
-![ROC curves](../outputs/figures/08_roc_curves_comparison.png)
-![Confusion matrices](../outputs/figures/09_confusion_matrices.png)
+## 6.4 Reading These Numbers Correctly
 
-## 6.3 Reading These Numbers Correctly (important for interviews)
+**Accuracy (~66%) looks mediocre despite reasonable AUC (~0.67)** because
+`class_weight`/`scale_pos_weight` deliberately shift the decision threshold
+to trade accuracy for recall — the right trade here, since missing a
+high-risk patient costs more than one unnecessary follow-up call.
 
-**Why does accuracy look mediocre (~66%) despite reasonable AUC (~0.67)?**
-Because `class_weight="balanced"` deliberately shifts the model's default
-decision threshold — it's now much more willing to flag a patient as
-high-risk than a model trained without weighting would be. That trades
-accuracy for recall, which is the right trade for this business problem
-(Phase 1.4): missing a high-risk patient costs more than one extra
-unnecessary follow-up call. **Accuracy is the wrong headline metric here,
-exactly as flagged in Phase 1.5** — these results are the concrete proof of
-that claim, not just the caveat.
+**Predicted probabilities are not well-calibrated.** After the fix, the
+corrected model's probability outputs on the test set range from 0.05 to
+0.945 with a mean of 0.448 — far wider and higher than the 11.4% true base
+rate would suggest for a calibrated model. This is a direct, expected
+consequence of aggressive class weighting: it reshapes the decision surface
+for better ranking at the cost of the raw probability number meaning
+"true probability of readmission." **Every metric used in this project
+(ROC-AUC, precision/recall, top-decile lift) is rank-based and remains
+valid** — only a literal, calibrated-probability interpretation of a single
+score would be misleading. This is worth stating explicitly to a
+stakeholder: "top 10% by model score" is a reliable claim; "this specific
+patient has a 73% chance of readmission" is not, without a separate
+calibration step (e.g. Platt scaling) that this project doesn't include.
 
-**Why is precision so low (~0.18)?** At the default 0.5 threshold, roughly
-82% of patients flagged "high-risk" don't end up readmitted. This sounds
-bad in isolation, but has to be read against the 11.4% base rate: a model
-with zero skill would have ~11% precision on positive predictions by
-chance, so 18% precision is genuinely informative, just not dramatically
-so. This is a direct, honest reflection of how hard this specific
-prediction problem is — 30-day readmission depends on many factors (home
-support, medication adherence, unrelated new illness) that simply aren't
-captured in a hospital encounter record.
+## 6.5 Why XGBoost Won (and why the margin is modest)
 
-**Precision/recall is a dial, not a fixed number.** The 0.5 classification
-threshold used above is arbitrary — in Phase 8 (dashboard) or a real
-deployment, this threshold would be tuned based on care-team capacity
-(Phase 1.4's "workload feasibility" metric): if a hospital can only follow
-up with 15% of discharges, you'd set the threshold to flag exactly that
-top 15% by predicted probability, not use a fixed 0.5 cutoff.
+- **Decision Tree** (single tree) is weakest — prone to high variance,
+  overfits specific training patterns.
+- **Random Forest** improves via *bagging* (many trees on bootstrapped
+  samples, averaged) — reduces variance.
+- **XGBoost** improves further via *boosting* (each tree corrects the
+  previous ensemble's errors) — reduces bias too, and generally handles
+  nonlinear feature interactions (e.g. diagnosis × utilization from Phase 5)
+  better than a single linear boundary.
 
-## 6.4 Why XGBoost Won (and why the margin is small)
+Logistic Regression (0.6598 AUC) remains close behind XGBoost (0.6670) — a
+gap of 0.0072. This still suggests the underlying relationships are close
+to additive/linear without huge nonlinear interaction effects, a useful,
+nuanced fact for an interview: a simpler, more interpretable model gets
+most of the way to the ensemble's performance here.
 
-XGBoost edges out Random Forest (0.6671 vs. 0.6645 AUC) and clearly beats
-the single Decision Tree (0.6427). This ordering matches theoretical
-expectations:
+## 6.6 Beating the Phase 5 SQL Benchmark
 
-- **Decision Tree** (single tree) is the weakest — a single tree is prone
-  to high variance and tends to overfit the specific patterns in the
-  training data, without the averaging effect that stabilizes ensembles.
-- **Random Forest** improves on this via *bagging* — training many trees on
-  bootstrapped samples with random feature subsets, then averaging —
-  which reduces variance without much added bias.
-- **XGBoost** improves further via *boosting* — each new tree is trained
-  specifically to correct the errors of the previous ensemble, which
-  reduces bias in addition to variance, and generally handles the kind of
-  nonlinear feature interactions found in Phase 5 (e.g. diagnosis ×
-  utilization) better than a single linear decision boundary.
-
-**The more interesting finding is how *small* the gap is.** Logistic
-Regression (0.6598 AUC) is barely behind XGBoost (0.6671) — a difference of
-0.0073, not a dramatic gap. This is a genuinely useful, nuanced insight for
-an interview: **it suggests the underlying relationships in this dataset
-are close to linear/additive**, without huge nonlinear interaction effects
-that only a tree ensemble could capture. A simpler, more interpretable
-model (Logistic Regression) gets you *most* of the way to XGBoost's
-performance here — worth knowing before defaulting to "just use XGBoost,"
-since interpretability and training/serving simplicity have real value in
-a regulated healthcare setting.
-
-## 6.5 Beating the Phase 5 SQL Benchmark
-
-Every model beats the SQL-only rule-based benchmark from Phase 5
-(1.9x lift, ~19% of readmissions captured in the top decile):
-
-| | Top-decile lift | % of readmissions captured |
-|---|---|---|
-| Phase 5 SQL rule (4-variable, hand-weighted) | 1.9x | 19.0% |
-| Logistic Regression | 2.24x | 22.4% |
-| Decision Tree | 2.24x | 22.4% |
-| Random Forest | 2.30x | 23.0% |
-| **XGBoost** | **2.42x** | **24.2%** |
-
-This closes the loop opened in Phase 5: **the added complexity of a
-trained ML model is justified** — XGBoost's top-decile lift is roughly 27%
-better than the simple SQL rule (2.42 vs. 1.9), meaning a care team acting
-on the model's top 10% would catch about 1,270 more readmissions across
-the full patient population than acting on the manual rule. That's a
-real, quantifiable business case for the model over the simpler
-alternative — the exact comparison a Decision Analytics Associate would be
-expected to make before recommending production deployment.
-
-## 6.6 Feature Importance (Preview — Full SHAP Analysis in Phase 7)
-
-![Feature importance](../outputs/figures/10_feature_importance_best_model.png)
-
-Top features for the winning XGBoost model:
-
-| Feature | What it means |
+| | Top-decile lift |
 |---|---|
-| `discharge_disposition_id_1` | Discharged to home (vs. transferred elsewhere) — the single strongest feature |
-| `number_inpatient` | Prior inpatient visits — confirms the Phase 3/5 finding, now validated by a trained model |
-| `discharge_disposition_id_22` | Discharged/transferred to a rehab facility |
-| `diabetesMed` | Whether the patient is on any diabetes medication |
-| `diag_1_group_Musculoskeletal` | Primary diagnosis category |
+| Phase 5 SQL rule (hand-weighted) | 1.9x |
+| Logistic Regression | 2.25x |
+| Decision Tree | 2.24x |
+| Random Forest | 2.29x |
+| **XGBoost** | **2.36x** |
 
-**This is XGBoost's own built-in importance score (gain-based), not SHAP.**
-It's useful as a quick sanity check — reassuringly, `number_inpatient`
-(the strongest single EDA/SQL signal) shows up as the #2 feature — but
-built-in importances can be misleading for correlated or high-cardinality
-one-hot features. Phase 7 replaces this with SHAP values, which give a
-theoretically grounded, per-prediction explanation instead of a single
-global ranking.
+XGBoost's lift is about 24% better than the simple SQL rule (2.36 vs 1.9) —
+a real, quantifiable case for the added complexity of a trained model over
+a manual rule, even after the correction.
 
-## 6.7 Fairness Check — Closing the Loop from Phase 2.3
-
-Per the plan established in Phase 2.3 and Phase 4.11, we retrained the
-winning XGBoost architecture **with** `race` and `payer_code` added back
-into the feature set, to measure their actual predictive contribution:
+## 6.7 Fairness Check
 
 | | ROC-AUC |
 |---|---|
-| XGBoost without race/payer_code | 0.6671 |
-| XGBoost with race/payer_code | 0.6692 |
-| **AUC uplift** | **+0.0021** |
+| XGBoost without race/payer_code | 0.6670 |
+| XGBoost with race/payer_code | 0.6685 |
+| **AUC uplift** | **+0.0015** |
 
-**This is a genuinely important finding, not a null result to skip past.**
-Adding two features that function as socioeconomic/demographic proxies
-(Phase 2.3) buys essentially no predictive improvement — 0.0021 AUC is
-within noise for a dataset this size. This gives a concrete, evidence-based
-answer to a question that's often handled with a vague gesture toward
-"fairness" instead of an actual number: **there is no meaningful accuracy
-cost to excluding race and payer_code from a production version of this
-model**, which makes excluding them an easy recommendation rather than a
-difficult trade-off between fairness and performance.
+Adding two demographic/socioeconomic-proxy features back buys essentially
+no predictive improvement — well within noise for a dataset this size.
+This remains a clean, evidence-based case for excluding `race` and
+`payer_code` from a production version of this model at effectively zero
+performance cost.
 
 ## 6.8 Business Insight Summary
 
-> Three things are now backed by trained models, not just EDA/SQL
-> hypotheses: **(1)** XGBoost is the best model by the metric that matters
-> for this use case (ROC-AUC / top-decile lift), beating the SQL-only
-> benchmark by ~27% — a concrete, quantifiable reason to deploy a model
-> instead of a manual rule; **(2)** the gap between XGBoost and plain
-> Logistic Regression is small, meaning most of the signal in this data is
-> close to linear — a fact worth knowing before assuming the most complex
-> model is always the right production choice; **(3)** `race` and
-> `payer_code` can be dropped from the production feature set at
-> essentially zero cost to model performance (+0.0021 AUC), removing a
-> fairness liability for free rather than trading it off against accuracy.
+> **(1)** XGBoost beats the SQL-only benchmark by ~24% on top-decile lift —
+> a concrete case for deploying a model, even after correcting a real
+> encoding bug that could easily have gone unnoticed. **(2)** The bug itself
+> is a useful lesson: always sanity-check that two mathematically-equivalent
+> code paths agree, especially at pipeline boundaries between scikit-learn
+> and a library (like XGBoost) with its own missing-value semantics.
+> **(3)** `race` and `payer_code` can be dropped at essentially zero cost to
+> performance (+0.0015 AUC) — removing a fairness liability for free.

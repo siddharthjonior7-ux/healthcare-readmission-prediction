@@ -2,14 +2,14 @@
   "model_comparison": [
     {
       "model": "Logistic Regression",
-      "accuracy": 0.6658,
-      "precision": 0.179,
-      "recall": 0.5482,
-      "f1": 0.2699,
+      "accuracy": 0.6661,
+      "precision": 0.1793,
+      "recall": 0.5491,
+      "f1": 0.2704,
       "roc_auc": 0.6598,
-      "top_decile_readmit_rate_pct": 25.24,
-      "pct_of_readmissions_captured": 22.41,
-      "lift_vs_random": 2.24
+      "top_decile_readmit_rate_pct": 25.39,
+      "pct_of_readmissions_captured": 22.55,
+      "lift_vs_random": 2.25
     },
     {
       "model": "Decision Tree",
@@ -24,31 +24,31 @@
     },
     {
       "model": "Random Forest",
-      "accuracy": 0.6741,
-      "precision": 0.1815,
-      "recall": 0.5392,
-      "f1": 0.2715,
-      "roc_auc": 0.6645,
-      "top_decile_readmit_rate_pct": 25.9,
-      "pct_of_readmissions_captured": 23.0,
-      "lift_vs_random": 2.3
+      "accuracy": 0.6726,
+      "precision": 0.1807,
+      "recall": 0.5396,
+      "f1": 0.2708,
+      "roc_auc": 0.6637,
+      "top_decile_readmit_rate_pct": 25.75,
+      "pct_of_readmissions_captured": 22.86,
+      "lift_vs_random": 2.29
     },
     {
       "model": "XGBoost",
-      "accuracy": 0.6611,
-      "precision": 0.1792,
-      "recall": 0.5608,
-      "f1": 0.2716,
-      "roc_auc": 0.6671,
-      "top_decile_readmit_rate_pct": 27.22,
-      "pct_of_readmissions_captured": 24.17,
-      "lift_vs_random": 2.42
+      "accuracy": 0.6614,
+      "precision": 0.1802,
+      "recall": 0.5648,
+      "f1": 0.2732,
+      "roc_auc": 0.667,
+      "top_decile_readmit_rate_pct": 26.61,
+      "pct_of_readmissions_captured": 23.63,
+      "lift_vs_random": 2.36
     }
   ],
   "best_model": "XGBoost",
   "fairness_check": {
-    "auc_without_race_payer": 0.6671,
-    "auc_with_race_payer": 0.6692,
-    "auc_uplift": 0.0021
+    "auc_without_race_payer": 0.667,
+    "auc_with_race_payer": 0.6685,
+    "auc_uplift": 0.0015
   }
 }

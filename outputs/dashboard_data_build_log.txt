@@ -1,0 +1,19 @@
+Building Power BI data exports...
+
+fact_encounters.csv: 99,320 rows x 45 columns (19,724 test-split rows carry a trustworthy risk score)
+dim_admission_type.csv: 8 rows
+dim_discharge_disposition.csv: 30 rows
+dim_admission_source.csv: 25 rows
+model_performance.csv: 4 models
+fairness_check.csv: 2 rows
+high_risk_worklist.csv: top 200 TEST-SPLIT (out-of-sample) encounters by predicted risk
+
+--- Quick validation ---
+Readmit rate by risk_band, TEST SPLIT ONLY (sanity check -- should be strongly ordered):
+                       count      mean
+risk_band                             
+High Risk (Top 20%)     3945  0.217997
+Low Risk (Bottom 50%)   9862  0.066619
+Medium Risk (Mid 30%)   5917  0.119148
+
+All exports saved to /home/claude/healthcare-readmission-prediction/powerbi/
